@@ -6,7 +6,7 @@
 
 Name: %{shortname}-base
 Version: %{source_date}
-Release: 3%{?dist}
+Release: 4%{?dist}
 Epoch: 7
 Summary: TeX formatting system
 License: foo
@@ -2821,6 +2821,7 @@ for a Type 1 font.
 %package -n %{shortname}-lib
 Summary: Shared libraries for TeX-related files
 Provides: texlive-kpathsea-lib = %{epoch}:%{source_date}-%{release}
+Provides: texlive-kpathsea-lib(%{__isa}) = %{epoch}:%{source_date}-%{release}
 Obsoletes: texlive-kpathsea-lib < 2015
 Provides: bundled(lua) = 5.2.4
 
@@ -8404,6 +8405,9 @@ done <<< "$list"
 %doc %{_texdir}/texmf-dist/doc/latex/yplan/
 
 %changelog
+* Thu Nov  9 2017 Tom Callaway <spot@fedoraproject.org> - 7:20170520-4
+- add explicit provide for texlive-kpathsea-lib(__isa) to facilitate update
+
 * Thu Nov  9 2017 Tom Callaway <spot@fedoraproject.org> - 7:20170520-3
 - use more accurate provides
 
