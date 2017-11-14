@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import os
@@ -6,13 +6,22 @@ import pickle
 import progressbar
 import re
 import requests
+import shutil
 import sys
+import tarfile
 import time
-import urllib2
-import urlparse
+import urllib3
+from urllib.parse import urljoin
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 found = 0
+
+# Nothing really uses this, we just need to have it.
+# TODO: Allow this to be overridden by an argument
+tlversion = 20170520
+tlrelease = 1
+tlepoch = 7
 
 extension = '.tar.xz'
 
@@ -64,11 +73,13 @@ ctanbaseurl = "http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/arch
 
 ctan_good_items = []
 
-site = urllib2.urlopen(ctanbaseurl)
-html = site.read()
-soup = BeautifulSoup(html, "lxml")
+http = urllib3.PoolManager()
+site = http.request('GET', ctanbaseurl)
+soup = BeautifulSoup(site.data, "lxml")
 
 list_urls = soup.find_all('a')
+
+site.release_conn()
 
 clean_list_urls = [word for word in list_urls if not blacklist.search(str(word))]
 
@@ -79,7 +90,7 @@ def generate_ctan_good_items(ctan_good_items, found):
 		bar.update(found)
 		if url['href'].endswith(extension):
 			# Check the Content-Length. If it is less than 1024, it is an empty shell.
-			true_url = urlparse.urljoin(ctanbaseurl, url['href'])
+			true_url = urljoin(ctanbaseurl, url['href'])
 			res = requests.head(true_url)
 			if int(res.headers['content-length']) > 1024:
 				# print url['href']
@@ -104,6 +115,86 @@ def generate_source_list(ctan_good_items, inputargs, specfile):
 		else:
 			specfile.write("Source{}: {}\n".format(x['sourcenum'], x['ctanurl']))
 
+def generate_preamble(inputargs, specfile):
+	if inputargs.verbose:
+		print("Writing preamble section to spec file.")
+	specfile.write("Name: texlive\n")
+	specfile.write("Version: {}\n".format(tlversion))
+	specfile.write("Release: {}\n".format(tlrelease))
+	specfile.write("Epoch: {}\n".format(tlepoch))
+	specfile.write("Summary: TeX formatting system\n")
+	# TODO: Autogenerate this from what we find in the subpackages?
+	# LOW PRIORITY: We do not care about the validity of this string so much, there is no "texlive" binary package
+	specfile.write("License: Artistic 2.0 and GPLv2 and GPLv2+ and LGPLv2+ and LPPL and MIT and Public Domain and UCD and Utopia\n")
+	specfile.write("URL: http://tug.org/texlive/\n")
+	# We should not have any BuildRequires here.
+	specfile.write("BuildArch: noarch\n")
+
+def generate_prep_section(inputargs, specfile):
+	if inputargs.verbose:
+		print("Writing %prep section to spec file.")
+	specfile.write("\n")
+	specfile.write("%prep\n")
+	specfile.write("%setup -q -c -T\n\n")
+	specfile.write("#this macro has to be here, not at the top, or it will not evaluate properly. :P\n")
+	specfile.write('%global mysources %{lua: for index,value in ipairs(sources) do if index >= 1 then print(value.." ") end end}\n')
+	specfile.write("\n")
+
+def generate_build_section(inputargs, specfile):
+	if inputargs.verbose:
+		print("Writing %build section to spec file.")
+	specfile.write("%build\n")
+	specfile.write("\n")
+
+def generate_install_section(inputargs, specfile):
+	if inputargs.verbose:
+		print("Writing %install section to spec file.")
+	specfile.write("%install\n")
+	specfile.write("pushd %{buildroot}%{_texdir}\n")
+	specfile.write("for noarchsrc in %{mysources}; do\n")
+	specfile.write("  xz -dc $noarchsrc | tar x\n")
+	specfile.write("done\n")
+	specfile.write("popd\n")
+	specfile.write("\n")
+
+def download_and_unpack(ctan_good_items, inputargs, specfile):
+	print("Downloading and unpacking valid CTAN packages into components/:")
+	bar = progressbar.ProgressBar(maxval=len(ctan_good_items)).start()
+	for x in ctan_good_items:
+		bar.update(x['sourcenum'])
+		my_tarball_path = os.path.join('components', str(x['tarball']))
+		# print(my_tarball_path)
+		try:
+			my_http = urllib3.PoolManager()
+			with my_http.request('GET', x['ctanurl'], preload_content=False) as r, open(my_tarball_path, 'wb') as local_file:
+				shutil.copyfileobj(r, local_file)
+		except HTTPError as e:
+			print("HTTP Error: {} {}".format(e.code, x['ctanurl']))
+			alldone(specfile)
+		except URLError as e:
+			print("URL Error: {} {}".format(e.reason, x['ctanurl']))
+			alldone(specfile)
+
+		tar = tarfile.open(my_tarball_path, "r:xz")
+		os.makedirs(os.path.join('components', str(x['name'])))
+		tar.extractall(path=os.path.join('components', str(x['name'])))
+		tar.close()
+
+		# need to repack beebe into clean version
+		if 'beebe' in x['name']:
+			os.remove(os.path.join('components', str(x['name']), 'bibtex/bst/beebe/astron.bst'))
+			os.remove(os.path.join('components', str(x['name']), 'bibtex/bst/beebe/jtb.bst'))
+			beebe_clean_tar = tarfile.open(os.path.join('components', 'beebe-clean.tar.xz'), "w:xz")
+			beebe_clean_tar.add(os.path.join('components', str(x['name'])), arcname='.')
+			beebe_clean_tar.close()
+			# Remove unclean tar
+			os.remove(os.path.join('components', str(x['tarball'])))
+	bar.finish()
+
+def alldone(specfile):
+	specfile.close()
+	sys.exit(0)
+
 # Time to make a new texlive.spec
 if os.path.isfile("texlive.spec"):
 	print("texlive.spec is already here, move it first please")
@@ -114,14 +205,14 @@ else:
 parser = argparse.ArgumentParser(description='Do the magic to make the Fedora texlive.spec file.')
 parser.add_argument("--readdict", help="Read valid CTAN dictionary from a file", action="store", dest="read_dict_file_location")
 parser.add_argument("--savedict", help="Save valid CTAN dictionary to a file", action="store", dest="dict_file_location")
+parser.add_argument("--usecache", help="Use cache for unpacked components", action='store_true')
 parser.add_argument("--verbose", help="Be verbose about what is happening", action='store_true')
 inputargs = parser.parse_args()
-print inputargs
 
 if inputargs.dict_file_location:
 	if inputargs.read_dict_file_location:
 		print("Can not use --readdict with --savedict. Exiting.")
-		sys.exit(0)
+		alldone(specfile)
 	if inputargs.verbose:
 		print("Generating valid CTAN dictionary from upstream sources.")
 	generate_ctan_good_items(ctan_good_items, found)
@@ -139,29 +230,36 @@ else:
 	else:
 		generate_ctan_good_items(ctan_good_items, found)
 
+if os.path.exists("components"):
+	if not inputargs.usecache:
+		print("Components directory exists! Please remove and restart, or pass --usecache.")
+		alldone(specfile)
+else:
+	os.makedirs("components")
+
+if inputargs.usecache:
+	print("Using cache, skipping download and unpacking loop")
+else:
+	download_and_unpack(ctan_good_items, inputargs, specfile)
+generate_preamble(inputargs, specfile)
 generate_source_list(ctan_good_items, inputargs, specfile)
+# TODO SUBPACKAGES (to be fair, that's 99% of this spec file)
+# need to make a working dir to unpack things into
+generate_prep_section(inputargs, specfile)
+generate_build_section(inputargs, specfile)
+generate_install_section(inputargs, specfile)
+# TODO: FILES SECTIONS
 
 # Spec file done!
-
-specfile.close()
+alldone(specfile)
 
 # TODO
 # generate subpackage list
 # - some packages are doc only
 # - some packages have both (and if so, we want to combine them)
-# Download files
-# Unpack files
 # Generate subpackage entry
 #  - svn ver
 #  - license
 #  - deps 
 # Generate files entry
 #  - can we make it simple or does it need to be file by file?
-
-
-# TODO
-# clean non-free files from beebe.tar.xz
-# bibtex/bst/beebe/astron.bst
-# bibtex/bst/beebe/jtb.bst
-# We must remove those files from the tarball and make a "-clean" tarball.
-
