@@ -3,10 +3,15 @@
 %global source_name texlive-%{source_date}-source
 %global macrosdir %(d=%{_rpmconfigdir}/macros.d; [ -d $d ] || d=%{_sysconfdir}/rpm; echo $d)
 %{!?_texdir: %global _texdir %{_datadir}/%{shortname}}
+%{!?_texmf_var: %global _texmf_var %{_var}/lib/texmf}
+
+# don't export private perl modules
+%global __provides_exclude %{?__provides_exclude:%__provides_exclude|}^perl\\(
+%global __requires_exclude %{?__requires_exclude:%__requires_exclude|}^perl\\((PDF::Reuse.*|Pedigree.*|TeXLive.*|Tk::path_tre)\\)
 
 Name: %{shortname}-base
 Version: %{source_date}
-Release: 8%{?dist}
+Release: 9%{?dist}
 Epoch: 7
 Summary: TeX formatting system
 License: foo
@@ -5980,6 +5985,7 @@ make world %{?_smp_mflags} STRIPPROG=/bin/true STRIP=/bin/true
 %install
 # make directories
 mkdir -p %{buildroot}%{_texdir}/texmf-config/web2c
+mkdir -p %{buildroot}%{_texmf_var}
 
 # make symlinks
 pushd %{buildroot}%{_texdir}/texmf-config/web2c
@@ -6123,6 +6129,10 @@ rm -f %{buildroot}/%{_texdir}/texmf-dist/scripts/context/stubs/source/*
 # not sure why this is here
 rm -rf %{buildroot}%{_texdir}/texmf-dist/source/fonts/zhmetrics/ttfonts.map
 
+pushd %{buildroot}%{_texdir}
+[ ! -h texmf-var ] && ln -s %{_texmf_var} texmf-var
+popd
+
 # sync built/distro binaries
 pushd %{buildroot}%{_bindir}
 [ ! -e mfplain ] && ln -s mpost mfplain
@@ -6163,6 +6173,17 @@ mv %{buildroot}%{_texdir}/texmf-dist/doc/info/* %{buildroot}%{_infodir}/
 sed -i '/^[a-z].*$/s/^/\#\!\ /' %{buildroot}%{_sysconfdir}/texlive/web2c/fmtutil.cnf
 
 # SCRIPTLETS
+
+%pre
+rm -rf %{_texdir}/texmf-var
+rm -rf %{_texmf_var}/*
+:
+
+%posttrans
+if [ -x /usr/sbin/selinuxenabled ] && /usr/sbin/selinuxenabled; then
+[ -x /sbin/restorecon ] && /sbin/restorecon -R %{_texmf_var}/
+fi
+:
 
 %post -n %{shortname}-aleph
 if [ $1 -gt 0 ] ; then
@@ -6344,6 +6365,9 @@ fi
 %post -n %{shortname}-latex2man
 /sbin/install-info %{_infodir}/latex2man.info %{_infodir}/dir 2>/dev/null
 :
+
+%post -n %{shortname}-lib -p /sbin/ldconfig
+%postun -n %{shortname}-lib -p /sbin/ldconfig
 
 %post -n %{shortname}-lollipop
 if [ $1 -gt 0 ] ; then
@@ -6613,6 +6637,8 @@ done <<< "$list"
 %dir %{_texdir}/texmf-dist/source/fonts/zhmetrics
 %dir %{_texdir}/texmf-dist/texconfig
 %dir %{_texdir}/texmf-dist/web2c
+%dir %{_texmf_var}
+%{_texdir}/texmf-var
 
 %files -n %{shortname}-a2ping
 %license gpl.txt
@@ -8411,6 +8437,9 @@ done <<< "$list"
 %doc %{_texdir}/texmf-dist/doc/latex/yplan/
 
 %changelog
+* Tue Nov 14 2017 Tom Callaway <spot@fedoraproject.org> - 7:20170520-9
+- var handling & perl cleanups & extra scriptlets
+
 * Fri Nov 10 2017 Tom Callaway <spot@fedoraproject.org> - 7:20170520-8
 - add additional provides for texlive-dvipng, texlive-dvipdfmx, and texlive-xdvi
 
