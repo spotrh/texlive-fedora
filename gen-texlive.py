@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 
+import argparse
+import os
+import pickle
 import progressbar
 import re
 import requests
+import sys
+import time
 import urllib2
 import urlparse
 from bs4 import BeautifulSoup
@@ -86,13 +91,59 @@ def generate_ctan_good_items(ctan_good_items, found):
 	bar.finish()
 	print("Number of valid CTAN packages found:",found)
 
-def generate_source_list(ctan_good_items):
+def generate_source_list(ctan_good_items, inputargs, specfile):
+	if inputargs.verbose:
+		print("Writing Source list to spec file.")
 	for x in ctan_good_items:
-		print("Source{}: {}".format(x['sourcenum'], x['ctanurl']))
+		if 'beebe' in x['name']:
+			specfile.write("# Upstream beebe contains non-free files:\n")
+			specfile.write("# bibtex/bst/beebe/astron.bst\n")
+			specfile.write("# bibtex/bst/beebe/jtb.bst\n")
+			specfile.write("# We remove those files from the tarball and make a -clean tarball.\n")
+			specfile.write("Source{}: beebe-clean.tar.xz\n".format(x['sourcenum']))
+		else:
+			specfile.write("Source{}: {}\n".format(x['sourcenum'], x['ctanurl']))
 
+# Time to make a new texlive.spec
+if os.path.isfile("texlive.spec"):
+	print("texlive.spec is already here, move it first please")
+	sys.exit(0)
+else:
+	specfile = open("texlive.spec", "w+")
 
-generate_ctan_good_items(ctan_good_items, found)
-generate_source_list(ctan_good_items)
+parser = argparse.ArgumentParser(description='Do the magic to make the Fedora texlive.spec file.')
+parser.add_argument("--readdict", help="Read valid CTAN dictionary from a file", action="store", dest="read_dict_file_location")
+parser.add_argument("--savedict", help="Save valid CTAN dictionary to a file", action="store", dest="dict_file_location")
+parser.add_argument("--verbose", help="Be verbose about what is happening", action='store_true')
+inputargs = parser.parse_args()
+print inputargs
+
+if inputargs.dict_file_location:
+	if inputargs.read_dict_file_location:
+		print("Can not use --readdict with --savedict. Exiting.")
+		sys.exit(0)
+	if inputargs.verbose:
+		print("Generating valid CTAN dictionary from upstream sources.")
+	generate_ctan_good_items(ctan_good_items, found)
+	if inputargs.verbose:
+		print("Saving valid CTAN dictionary to {}".format(inputargs.dict_file_location))
+	with open(inputargs.dict_file_location, 'wb') as f:
+		pickle.dump(ctan_good_items, f)
+else:
+	if inputargs.read_dict_file_location:
+		if inputargs.verbose:
+			print("Reading CTAN dictionary from {}".format(inputargs.read_dict_file_location))
+			print("File last modified on {}".format(time.ctime(os.path.getmtime(inputargs.read_dict_file_location))))
+		with open(inputargs.read_dict_file_location, 'rb') as f:
+			ctan_good_items = pickle.load(f)
+	else:
+		generate_ctan_good_items(ctan_good_items, found)
+
+generate_source_list(ctan_good_items, inputargs, specfile)
+
+# Spec file done!
+
+specfile.close()
 
 # TODO
 # generate subpackage list
