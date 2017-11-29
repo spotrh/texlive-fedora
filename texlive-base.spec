@@ -11,7 +11,7 @@
 
 Name: %{shortname}-base
 Version: %{source_date}
-Release: 9%{?dist}
+Release: 10%{?dist}
 Epoch: 7
 Summary: TeX formatting system
 License: foo
@@ -6130,7 +6130,10 @@ rm -f %{buildroot}/%{_texdir}/texmf-dist/scripts/context/stubs/source/*
 rm -rf %{buildroot}%{_texdir}/texmf-dist/source/fonts/zhmetrics/ttfonts.map
 
 pushd %{buildroot}%{_texdir}
-[ ! -h texmf-var ] && ln -s %{_texmf_var} texmf-var
+# ALWAYS NUKE THIS IF IT IS HERE.
+rm -rf texmf-var
+# AND NOW WE MAKE THE SYMLINK.
+ln -s %{_texmf_var} texmf-var
 popd
 
 # sync built/distro binaries
@@ -8437,6 +8440,12 @@ done <<< "$list"
 %doc %{_texdir}/texmf-dist/doc/latex/yplan/
 
 %changelog
+* Wed Nov 29 2017 Tom Callaway <spot@fedoraproject.org> - 7:20170520-10
+- kpathsea trigger uses mtxrun, which is in the context subpackage ...
+  ... but the kpathsea subpackage did not have a Requires on it.
+  It does now. How long was this broken?!?
+- force texdir/texmf-var to be a symlink to /var/lib/texmf
+
 * Tue Nov 14 2017 Tom Callaway <spot@fedoraproject.org> - 7:20170520-9
 - var handling & perl cleanups & extra scriptlets
 
