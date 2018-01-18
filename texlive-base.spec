@@ -11,7 +11,7 @@
 
 Name: %{shortname}-base
 Version: %{source_date}
-Release: 10%{?dist}
+Release: 11%{?dist}
 Epoch: 7
 Summary: TeX formatting system
 License: foo
@@ -378,7 +378,12 @@ BuildRequires: xz libXaw-devel libXi-devel ncurses-devel bison flex file perl(Di
 BuildRequires: gd-devel
 BuildRequires: teckit-devel >= 2.5.7
 BuildRequires: freetype-devel libpng-devel t1lib-devel zlib-devel poppler-devel t1utils
-BuildRequires: zziplib-devel libicu-devel cairo-devel harfbuzz-devel perl-generators pixman-devel graphite2-devel ghostscript-devel
+BuildRequires: zziplib-devel libicu-devel cairo-devel harfbuzz-devel perl-generators pixman-devel graphite2-devel
+%if 0%{?fedora} >= 28 || 0%{?rhel} >= 8
+BuildRequires: libgs-devel
+%else
+BuildRequires: ghostscript-devel
+%endif
 BuildRequires: libpaper-devel potrace-devel autoconf automake libtool
 BuildRequires: gmp-devel mpfr-devel
 
@@ -4145,6 +4150,8 @@ License: GPLv3+
 Summary: Create booklets from PDF files
 Requires: texlive-base
 Requires: texlive-kpathsea
+Requires: texlive-pdfcrop
+Requires: texlive-pdfjam
 # python
 BuildArch: noarch
 
@@ -8440,6 +8447,10 @@ done <<< "$list"
 %doc %{_texdir}/texmf-dist/doc/latex/yplan/
 
 %changelog
+* Thu Jan 18 2018 Tom Callaway <spot@fedoraproject.org> - 7:20170520-11
+- add missing deps for texlive-pdfbook2
+- fix ghostscript BR
+
 * Wed Nov 29 2017 Tom Callaway <spot@fedoraproject.org> - 7:20170520-10
 - kpathsea trigger uses mtxrun, which is in the context subpackage ...
   ... but the kpathsea subpackage did not have a Requires on it.

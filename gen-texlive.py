@@ -97,10 +97,19 @@ def generate_ctan_good_items(ctan_good_items, found):
 				# print str(url['href']).replace(extension, '')
 				# print str(url['href'])
 				# print str(true_url)
-				ctan_good_items.append({'name':str(url['href']).replace(extension, ''), 'tarball':str(url['href']), 'ctanurl':str(true_url), 'sourcenum':found+1})
+				ctan_good_items.append({'name':str(url['href']).replace(extension, ''), 'tarball':str(url['href']), 'ctanurl':str(true_url), 'isdoc':'false', 'justdoc':'false'})
 				found += 1
 	bar.finish()
 	print("Number of valid CTAN packages found:",found)
+	# Look for components which are "just doc", components which are not part of a foo & foo.doc pair
+	for x in ctan_good_items:
+		if '.doc' in x['name']:
+			# Hey this is a doc package! Mark it.
+			x['isdoc'] = 'true'
+			basecomp = re.sub('.doc', '', x['name'])
+			if not any(t['name'] == basecomp for t in ctan_good_items):
+				print("{} is not part of a component pair, it is just doc".format(x['name']))
+				x['justdoc'] = 'true'
 
 def generate_source_list(ctan_good_items, inputargs, specfile):
 	if inputargs.verbose:
@@ -111,9 +120,9 @@ def generate_source_list(ctan_good_items, inputargs, specfile):
 			specfile.write("# bibtex/bst/beebe/astron.bst\n")
 			specfile.write("# bibtex/bst/beebe/jtb.bst\n")
 			specfile.write("# We remove those files from the tarball and make a -clean tarball.\n")
-			specfile.write("Source{}: beebe-clean.tar.xz\n".format(x['sourcenum']))
+			specfile.write("Source{}: beebe-clean.tar.xz\n".format(ctan_good_items.index(x)))
 		else:
-			specfile.write("Source{}: {}\n".format(x['sourcenum'], x['ctanurl']))
+			specfile.write("Source{}: {}\n".format(ctan_good_items.index(x), x['ctanurl']))
 
 def generate_preamble(inputargs, specfile):
 	if inputargs.verbose:
@@ -161,7 +170,7 @@ def download_and_unpack(ctan_good_items, inputargs, specfile):
 	print("Downloading and unpacking valid CTAN packages into components/:")
 	bar = progressbar.ProgressBar(maxval=len(ctan_good_items)).start()
 	for x in ctan_good_items:
-		bar.update(x['sourcenum'])
+		bar.update(ctan_good_items.index(x))
 		my_tarball_path = os.path.join('components', str(x['tarball']))
 		# print(my_tarball_path)
 		try:
@@ -190,6 +199,67 @@ def download_and_unpack(ctan_good_items, inputargs, specfile):
 			# Remove unclean tar
 			os.remove(os.path.join('components', str(x['tarball'])))
 	bar.finish()
+
+def generate_file_lists(ctan_good_items, inputargs, specfile):
+	# TODO: WHAT IS GOING WRONG WITH amsmath?
+	# TODO: Drop newline after %files if component has a doc pair.
+	print("Generating file lists for valid CTAN packages:")
+	# TODO: print %license 
+	# TODO: hardcode checks for corner cases which are not just dirs
+	for x in ctan_good_items:
+		if x['isdoc'] == 'true':
+			if x['justdoc'] == 'true':
+				specfile.write("%files {}\n".format(str(x['name'])))
+		else:
+			specfile.write("%files {}\n".format(str(x['name'])))
+		lowest_dirs = list()
+		base_path = os.path.join('components', str(x['name']))
+		for root,dirs,files in os.walk(base_path):
+			if not dirs and 'tlpkg' not in root:
+				lowest_dirs.append(os.path.relpath(root, base_path))
+
+		# Explicitly adding this helps.
+		if x['isdoc'] == 'true':
+			basecomp = re.sub('.doc', '', x['name'])
+			latexdocexplicit = os.path.join('doc/latex', basecomp)
+			# print("checking for {}".format(latexdocexplicit))
+			for i in lowest_dirs:
+				if latexdocexplicit in i:
+					print("adding {}".format(latexdocexplicit))
+					lowest_dirs.append(latexdocexplicit)
+					break
+			fontsdocexplicit = os.path.join('doc/fonts', basecomp)
+			for i in lowest_dirs:
+				if fontsdocexplicit in i:
+					lowest_dirs.append(fontsdocexplicit)
+					break
+		# TODO: Non font cases.
+
+		lowest_dirs.sort()
+		while lowest_dirs:
+			common_among_all = os.path.commonprefix(lowest_dirs)
+			if common_among_all and common_among_all != "tex/" and common_among_all != "fonts/" and "bibtex" not in common_among_all:
+				if x['isdoc'] == 'true':
+					specfile.write("%doc %{{_texdir}}/texmf-dist/{}\n".format(common_among_all))
+				else:
+					specfile.write("%{{_texdir}}/texmf-dist/{}\n".format(common_among_all))
+				break
+			else:
+				bottom_dir = lowest_dirs.pop()
+				if x['isdoc'] == 'true':
+					specfile.write("%doc %{{_texdir}}/texmf-dist/{}\n".format(bottom_dir))
+				else:
+					specfile.write("%{{_texdir}}/texmf-dist/{}\n".format(bottom_dir))
+
+		# common_among_all = os.path.commonprefix(lowest_dirs)
+		# if common_among_all and common_among_all != "tex/" and common_among_all != "fonts/" :
+			# print("for component {}, common dir {} found".format(str(x['name']), common_among_all))
+		#	specfile.write("%{{_texdir}}/texmf-dist/{}\n".format(common_among_all))
+		# else:
+		# 	for dir in lowest_dirs:
+		#		specfile.write("%{{_texdir}}/texmf-dist/{}\n".format(dir))
+		specfile.write("\n")
+
 
 def alldone(specfile):
 	specfile.close()
@@ -230,6 +300,9 @@ else:
 	else:
 		generate_ctan_good_items(ctan_good_items, found)
 
+# force sort
+ctan_good_items = sorted(ctan_good_items, key=lambda k: k['name'])
+
 if os.path.exists("components"):
 	if not inputargs.usecache:
 		print("Components directory exists! Please remove and restart, or pass --usecache.")
@@ -249,6 +322,7 @@ generate_prep_section(inputargs, specfile)
 generate_build_section(inputargs, specfile)
 generate_install_section(inputargs, specfile)
 # TODO: FILES SECTIONS
+generate_file_lists(ctan_good_items, inputargs, specfile)
 
 # Spec file done!
 alldone(specfile)
