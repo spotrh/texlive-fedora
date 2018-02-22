@@ -11,7 +11,7 @@
 
 Name: %{shortname}-base
 Version: %{source_date}
-Release: 11%{?dist}
+Release: 13%{?dist}
 Epoch: 7
 Summary: TeX formatting system
 License: foo
@@ -370,6 +370,8 @@ Patch5: texlive-2016-kpathsea-texlive-path.patch
 Patch6: texlive-20170520-luatex-crashfix.patch
 # fixes from arch and upstream texlive
 Patch7: texlive-20170520-new-poppler.patch
+# fix texmf.cnf so that it finds texinfo bits in Fedora
+Patch8: texlive-20170520-texinfo-path-fix.patch
 # security fix for bz#979176
 Patch100: texlive-bz979176.patch
 # Can't do this because it causes everything else to be noarch
@@ -5949,6 +5951,7 @@ xz -dc %{SOURCE0} | tar x
 %if 0%{?fedora} >= 28
 %patch7 -p1 -b .newpoppler
 %endif
+%patch8 -p1 -b .texinfo-fix
 %patch100 -p0
 # Setup copies of the licenses
 for l in `unxz -c %{SOURCE3} | tar t`; do
@@ -8447,6 +8450,12 @@ done <<< "$list"
 %doc %{_texdir}/texmf-dist/doc/latex/yplan/
 
 %changelog
+* Thu Feb 22 2018 Tom Callaway <spot@fedoraproject.org> - 7:20170520-13
+- rebuild again for new poppler in rawhide/f28
+
+* Sun Feb  4 2018 Tom Callaway <spot@fedoraproject.org> - 7:20170520-12
+- fix pathing so that texinfo files are found
+
 * Thu Jan 18 2018 Tom Callaway <spot@fedoraproject.org> - 7:20170520-11
 - add missing deps for texlive-pdfbook2
 - fix ghostscript BR

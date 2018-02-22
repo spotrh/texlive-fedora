@@ -1,0 +1,22 @@
+diff -up texlive-base-20170520/source/texk/kpathsea/texmf.cnf.texinfo-fix texlive-base-20170520/source/texk/kpathsea/texmf.cnf
+--- texlive-base-20170520/source/texk/kpathsea/texmf.cnf.texinfo-fix	2018-02-04 05:06:07.907542229 -0500
++++ texlive-base-20170520/source/texk/kpathsea/texmf.cnf	2018-02-04 05:06:15.813363518 -0500
+@@ -78,6 +78,9 @@ TEXMFSYSCONFIG = $TEXMFROOT/texmf-config
+ % to %USERPROFILE% on Windows, $HOME otherwise.
+ TEXMFHOME = ~/texmf
+ 
++% Texinfo on Fedora lives out of $TEXMFROOT
++TEXINFOHOME = $SELFAUTODIR/share/texmf
++
+ % TEXMFVAR, where texconfig/updmap/fmtutil store cached runtime data.
+ TEXMFVAR = ~/.texlive2017/texmf-var
+ 
+@@ -103,7 +106,7 @@ TEXMFAUXTREES = {}
+ % The odd-looking $TEXMFAUXTREES$TEXMF... construct is so that if no auxtree is
+ % ever defined (the 99% common case), no extra elements will be added to
+ % the search paths. tlmgr takes care to end any value with a trailing comma.
+-TEXMF = {$TEXMFAUXTREES$TEXMFCONFIG,$TEXMFVAR,$TEXMFHOME,!!$TEXMFLOCAL,!!$TEXMFSYSCONFIG,!!$TEXMFSYSVAR,!!$TEXMFDIST}
++TEXMF = {$TEXMFAUXTREES$TEXMFCONFIG,$TEXMFVAR,$TEXMFHOME,$TEXINFOHOME,!!$TEXMFLOCAL,!!$TEXMFSYSCONFIG,!!$TEXMFSYSVAR,!!$TEXMFDIST}
+ 
+ % Where to look for ls-R files.  There need not be an ls-R in the
+ % directories in this path, but if there is one, Kpathsea will use it.
