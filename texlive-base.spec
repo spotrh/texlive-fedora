@@ -11,7 +11,7 @@
 
 Name: %{shortname}-base
 Version: %{source_date}
-Release: 13%{?dist}
+Release: 14%{?dist}
 Epoch: 7
 Summary: TeX formatting system
 License: foo
@@ -372,6 +372,9 @@ Patch6: texlive-20170520-luatex-crashfix.patch
 Patch7: texlive-20170520-new-poppler.patch
 # fix texmf.cnf so that it finds texinfo bits in Fedora
 Patch8: texlive-20170520-texinfo-path-fix.patch
+# Update lcdf-typetools to latest git (as of Feb 23, 2018)
+Patch9: texlive-base-lcdf-typetools-git4166ff9.patch
+
 # security fix for bz#979176
 Patch100: texlive-bz979176.patch
 # Can't do this because it causes everything else to be noarch
@@ -5952,6 +5955,7 @@ xz -dc %{SOURCE0} | tar x
 %patch7 -p1 -b .newpoppler
 %endif
 %patch8 -p1 -b .texinfo-fix
+%patch9 -p1 -b .git4166ff9
 %patch100 -p0
 # Setup copies of the licenses
 for l in `unxz -c %{SOURCE3} | tar t`; do
@@ -5966,6 +5970,7 @@ done
 %build
 export CFLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing -Werror=format-security"
 export CXXFLAGS="$RPM_OPT_FLAGS -std=c++11 -fno-strict-aliasing -Werror=format-security"
+export LDFLAGS="%{build_ldflags}"
 cd source
 PREF=`pwd`/inst
 mkdir -p work
@@ -8450,6 +8455,10 @@ done <<< "$list"
 %doc %{_texdir}/texmf-dist/doc/latex/yplan/
 
 %changelog
+* Fri Feb 23 2018 Tom Callaway <spot@fedoraproject.org> - 7:20170520-14
+- pass LDFLAGS
+- update lcdf-typetools to git current to fix test failures
+
 * Thu Feb 22 2018 Tom Callaway <spot@fedoraproject.org> - 7:20170520-13
 - rebuild again for new poppler in rawhide/f28
 
