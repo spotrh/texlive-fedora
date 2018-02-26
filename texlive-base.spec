@@ -9,9 +9,15 @@
 %global __provides_exclude %{?__provides_exclude:%__provides_exclude|}^perl\\(
 %global __requires_exclude %{?__requires_exclude:%__requires_exclude|}^perl\\((PDF::Reuse.*|Pedigree.*|TeXLive.*|Tk::path_tre)\\)
 
+# We do not want this.
+%global __brp_mangle_shebangs /usr/bin/true
+
+# Not ppc64, not s390x, not aarch64 due to lack of clisp
+%global xindyarches %{arm} %{ix86} x86_64
+
 Name: %{shortname}-base
 Version: %{source_date}
-Release: 14%{?dist}
+Release: 16%{?dist}
 Epoch: 7
 Summary: TeX formatting system
 License: foo
@@ -345,24 +351,27 @@ Source323: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/
 Source324: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/typeoutfileinfo.doc.tar.xz
 Source325: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/ulqda.tar.xz
 Source326: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/ulqda.doc.tar.xz
-Source327: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/uptex.doc.tar.xz
-Source328: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/urlbst.tar.xz
-Source329: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/urlbst.doc.tar.xz
-Source330: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/velthuis.tar.xz
-Source331: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/velthuis.doc.tar.xz
-Source332: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/vlna.doc.tar.xz
-Source333: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/vpe.tar.xz
-Source334: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/vpe.doc.tar.xz
-Source335: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/web.tar.xz
-Source336: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/web.doc.tar.xz
-Source337: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xdvi.tar.xz
-Source338: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xdvi.doc.tar.xz
-Source339: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xetex.tar.xz
-Source340: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xetex.doc.tar.xz
-Source341: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xmltex.tar.xz
-Source342: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xmltex.doc.tar.xz
-Source343: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/yplan.tar.xz
-Source344: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/yplan.doc.tar.xz
+Source327: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/uplatex.doc.tar.xz
+Source328: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/uptex.doc.tar.xz
+Source329: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/urlbst.tar.xz
+Source330: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/urlbst.doc.tar.xz
+Source331: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/velthuis.tar.xz
+Source332: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/velthuis.doc.tar.xz
+Source333: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/vlna.doc.tar.xz
+Source334: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/vpe.tar.xz
+Source335: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/vpe.doc.tar.xz
+Source336: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/web.tar.xz
+Source337: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/web.doc.tar.xz
+Source338: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xdvi.tar.xz
+Source339: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xdvi.doc.tar.xz
+Source340: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xetex.tar.xz
+Source341: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xetex.doc.tar.xz
+Source342: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xindy.tar.xz
+Source343: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xindy.doc.tar.xz
+Source344: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xmltex.tar.xz
+Source345: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/xmltex.doc.tar.xz
+Source346: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/yplan.tar.xz
+Source347: http://ctan.sharelatex.com/tex-archive/systems/texlive/tlnet/archive/yplan.doc.tar.xz
 Patch1: tl-kpfix.patch
 Patch2: tl-format.patch
 Patch3: texlive-20160520-selinux-context.patch
@@ -374,6 +383,10 @@ Patch7: texlive-20170520-new-poppler.patch
 Patch8: texlive-20170520-texinfo-path-fix.patch
 # Update lcdf-typetools to latest git (as of Feb 23, 2018)
 Patch9: texlive-base-lcdf-typetools-git4166ff9.patch
+# Fix perl 5.18 issue in xindy
+Patch10: texlive-base-xindy-perl-518.patch
+# These tests only fail on 32 bit arches with gcc8
+Patch11: texlive-20180215-disable-more-failing-tests.patch
 
 # security fix for bz#979176
 Patch100: texlive-bz979176.patch
@@ -391,6 +404,11 @@ BuildRequires: ghostscript-devel
 %endif
 BuildRequires: libpaper-devel potrace-devel autoconf automake libtool
 BuildRequires: gmp-devel mpfr-devel
+# This is for xindy
+%ifarch %{xindy_arches}
+BuildRequires: clisp-devel
+BuildRequires: texlive-cyrillic, texlive-latex
+%endif
 
 %description
 The TeX Live software distribution offers a complete TeX system for a
@@ -4609,6 +4627,8 @@ Provides: texlive-ptex-bin = %{epoch}:%{source_date}-%{release}
 Obsoletes: texlive-ptex-bin < 7:20170520
 Provides: texlive-ptex-doc = %{epoch}:%{source_date}-%{release}
 Obsoletes: texlive-ptex-doc < 7:20170520
+Provides: texlive-platex-bin = %{epoch}:%{source_date}-%{release}
+Obsoletes: texlive-platex-bin < 7:20170520
 License: BSD
 Summary: A TeX system for publishing in Japanese
 Requires: texlive-adobemapping
@@ -5560,6 +5580,10 @@ Provides: tex-uptex = %{epoch}:%{source_date}-%{release}
 Provides: tex-uptex-bin = %{epoch}:%{source_date}-%{release}
 Provides: texlive-uptex-bin = %{epoch}:%{source_date}-%{release}
 Obsoletes: texlive-uptex-bin < 7:20170520
+Provides: texlive-uplatex-bin = %{epoch}:%{source_date}-%{release}
+Obsoletes: texlive-uplatex-bin < 7:20170520
+Provides: texlive-uplatex-doc = %{epoch}:%{source_date}-%{release}
+Obsoletes: texlive-uplatex-doc < 7:20170520
 Provides: texlive-uptex-doc = %{epoch}:%{source_date}-%{release}
 Obsoletes: texlive-uptex-doc < 7:20170520
 License: BSD
@@ -5610,6 +5634,8 @@ Provides: texlive-velthuis-bin = %{epoch}:%{source_date}-%{release}
 Obsoletes: texlive-velthuis-bin < 7:20170520
 Provides: texlive-velthuis-doc = %{epoch}:%{source_date}-%{release}
 Obsoletes: texlive-velthuis-doc < 7:20170520
+Provides: texlive-devnag = %{epoch}:%{source_date}-%{release}
+Obsoletes: texlive-devnag < 7:20170520
 Provides: texlive-devnag-bin = %{epoch}:%{source_date}-%{release}
 Obsoletes: texlive-devnag-bin < 7:20170520
 License: GPL+
@@ -5885,6 +5911,31 @@ XeTeX also eliminates the complex task of managing a TeX font installation.
 XeTeX is now part of the standard TeX distribution TeXLive and works well with
 TeX macro packages like LaTeX and ConTeXt.
 
+%ifarch %{xindy_arches}
+%package -n %{shortname}-xindy
+Provides: tex-xindy = %{epoch}:%{source_date}-%{release}
+Provides: tex-xindy-bin = %{epoch}:%{source_date}-%{release}
+Provides: tex-xindy-doc = %{epoch}:%{source_date}-%{release}
+Provides: texlive-xindy-bin = %{epoch}:%{source_date}-%{release}
+Obsoletes: texlive-xindy-bin < 7:20170520
+Provides: texlive-xindy-doc = %{epoch}:%{source_date}-%{release}
+Obsoletes: texlive-xindy-doc < 7:20170520
+License: GPLv2+
+Summary: A general-purpose index processor
+# There are some arch specific binaries in here.
+# BuildArch: noarch
+Requires: texlive-base
+Requires: texlive-kpathsea
+
+%description -n %{shortname}-xindy
+Xindy was deceloped after an impasse had been encountered in
+the attempt to complete internationalisation of makeindex.
+Xindy can be used to process indexes for documents marked up
+using (La)TeX, Nroff family and SGML-based languages. Xindy is
+highly configurable, both in markup terms and in terms of the
+collating order of the text being processed.
+%endif
+
 %package -n %{shortname}-xmltex
 Provides: tex-xmltex = %{epoch}:%{source_date}-%{release}
 Provides: tex-xmltex-bin = %{epoch}:%{source_date}-%{release}
@@ -5956,6 +6007,8 @@ xz -dc %{SOURCE0} | tar x
 %endif
 %patch8 -p1 -b .texinfo-fix
 %patch9 -p1 -b .git4166ff9
+%patch10 -p1 -b .perl518
+%patch11 -p0 -b .dt
 %patch100 -p0
 # Setup copies of the licenses
 for l in `unxz -c %{SOURCE3} | tar t`; do
@@ -5970,7 +6023,10 @@ done
 %build
 export CFLAGS="$RPM_OPT_FLAGS -fno-strict-aliasing -Werror=format-security"
 export CXXFLAGS="$RPM_OPT_FLAGS -std=c++11 -fno-strict-aliasing -Werror=format-security"
+# When redhat-rpm-config is updated in all stable targets, this conditional can go away
+%if 0%{?fedora} >= 28
 export LDFLAGS="%{build_ldflags}"
+%endif
 cd source
 PREF=`pwd`/inst
 mkdir -p work
@@ -5982,10 +6038,15 @@ cd work
 --with-system-gd --with-system-t1lib --with-system-teckit --with-system-freetype2 --with-system-poppler --with-system-zziplib \
 --with-system-cairo --with-system-icu --with-system-harfbuzz --with-system-graphite2 --with-system-libgs --with-system-pixman \
 --with-system-libpaper --with-system-potrace --with-pic --with-xdvi-x-toolkit=xaw --with-system-mpfr --with-system-gmp \
---disable-xindy --disable-xindy-docs --disable-xindy-make-rules --enable-shared --enable-compiler-warnings=max --without-cxx-runtime-hack \
+--enable-shared --enable-compiler-warnings=max --without-cxx-runtime-hack \
 --disable-native-texlive-build --disable-t1utils --disable-psutils --disable-biber --disable-ptexenc --disable-largefile \
 %ifarch aarch64 %{mips} %{power64} s390 s390x
 --disable-luajittex --disable-mfluajit \
+%endif
+%ifarch %{xindy_arches}
+--enable-xindy --disable-xindy-docs --disable-xindy-make-rules \
+%else
+--disable-xindy --disable-xindy-docs --disable-xindy-make-rules \
 %endif
 --disable-rpath
 
@@ -6189,6 +6250,17 @@ mv %{buildroot}%{_texdir}/texmf-dist/doc/info/* %{buildroot}%{_infodir}/
 
 # disable all formats
 sed -i '/^[a-z].*$/s/^/\#\!\ /' %{buildroot}%{_sysconfdir}/texlive/web2c/fmtutil.cnf
+
+%ifarch %{xindy_arches}
+# nothing to do here
+%else
+rm -rf %{buildroot}%{_mandir}/man1/xindy.1*
+rm -rf %{buildroot}%{_mandir}/man1/texindy.1*
+rm -rf %{buildroot}%{_mandir}/man1/tex2xindy.1*
+rm -rf %{buildroot}%{_texdir}/texmf-dist/scripts/xindy
+rm -rf %{buildroot}%{_texdir}/texmf-dist/xindy
+rm -rf %{buildroot}%{_texdir}/texmf-dist/doc/xindy
+%endif
 
 # SCRIPTLETS
 
@@ -7546,12 +7618,12 @@ done <<< "$list"
 %{_bindir}/dviluatex
 %ifnarch aarch64 %{mips} %{power64} s390 s390x
 %{_bindir}/luajittex
+%{_bindir}/texluajit
+%{_bindir}/texluajitc
 %endif
 %{_bindir}/luatex
 %{_bindir}/texlua
 %{_bindir}/texluac
-%{_bindir}/texluajit
-%{_bindir}/texluajitc
 %{_mandir}/man1/luatex.1*
 %{_mandir}/man1/texlua.1*
 %{_mandir}/man1/texluac.1*
@@ -8380,6 +8452,7 @@ done <<< "$list"
 %{_bindir}/uptftopl
 %{_bindir}/wovp2ovf
 %doc %{_texdir}/texmf-dist/doc/upmendex/
+%doc %{_texdir}/texmf-dist/doc/uplatex/
 
 %files -n %{shortname}-urlbst
 %license gpl.txt
@@ -8440,6 +8513,21 @@ done <<< "$list"
 %{_texdir}/texmf-dist/scripts/xetex/
 %doc %{_texdir}/texmf-dist/doc/xetex/
 
+%ifarch %{xindy_arches}
+%files -n %{shortname}-xindy
+%license gpl.txt
+%{_bindir}/tex2xindy
+%{_bindir}/texindy
+%{_bindir}/xindy
+%{_bindir}/xindy.mem
+%{_mandir}/man1/xindy.1*
+%{_mandir}/man1/texindy.1*
+%{_mandir}/man1/tex2xindy.1*
+%{_texdir}/texmf-dist/scripts/xindy/
+%{_texdir}/texmf-dist/xindy/
+%doc %{_texdir}/texmf-dist/doc/xindy/
+%endif
+
 %files -n %{shortname}-xmltex
 %license lppl1.txt
 %{_bindir}/pdfxmltex
@@ -8455,9 +8543,19 @@ done <<< "$list"
 %doc %{_texdir}/texmf-dist/doc/latex/yplan/
 
 %changelog
+* Mon Feb 26 2018 Tom Callaway <spot@fedoraproject.org> - 7:20170520-16
+- include uplatex docs in uptex
+- conditionalize xindy because clisp doesn't have ppc64/aarch64 packages
+
+* Sat Feb 24 2018 Tom Callaway <spot@fedoraproject.org> - 7:20170520-15
+- turn on xindy
+- disable shebang mangling
+- disable tests that fail on 32bit arches with gcc8
+
 * Fri Feb 23 2018 Tom Callaway <spot@fedoraproject.org> - 7:20170520-14
 - pass LDFLAGS
 - update lcdf-typetools to git current to fix test failures
+- turn on xindy
 
 * Thu Feb 22 2018 Tom Callaway <spot@fedoraproject.org> - 7:20170520-13
 - rebuild again for new poppler in rawhide/f28
